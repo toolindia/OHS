@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Partner Admin - OHS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; }
+        .hidden-view { display: none !important; }
+        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .btn-loading { opacity: 0.6; cursor: not-allowed; pointer-events: none; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+    <div id="toast" class="hidden-view fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-indigo-600 text-white px-6 py-3 rounded-full text-sm font-bold shadow-2xl transition-all duration-300"></div>
+
+    <!-- LOGIN -->
+    <div id="authBox" class="fixed inset-0 bg-slate-900 flex items-center justify-center z-50">
+        <div class="glass-panel p-8 rounded-2xl w-full max-w-sm m-4 text-center border-t-4 border-indigo-500">
+            <h2 class="text-3xl font-black text-white mb-2">Partner Portal</h2>
+            <p class="text-xs text-indigo-400 mb-8 uppercase tracking-widest font-bold">Booking Approvals</p>
+            <input type="text" id="hotelIdInput" placeholder="Hotel ID (e.g. HTL-101)" class="w-full text-center text-lg font-mono p-4 bg-slate-800 border border-slate-700 text-white rounded-xl mb-3 outline-none focus:border-indigo-500">
+            <input type="password" id="pinInput" placeholder="PIN Code" class="w-full text-center text-3xl font-mono p-4 bg-slate-800 border border-slate-700 text-white rounded-xl mb-6 outline-none focus:border-indigo-500">
+            <button id="btnLogin" onclick="login()" class="w-full bg-indigo-600 text-white font-black uppercase tracking-wider py-4 rounded-xl hover:bg-indigo-500 transition shadow-[0_0_15px_rgba(79,70,229,0.4)]">Login to Dashboard</button>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD -->
+    <div id="mainWrapper" class="hidden-view flex-1 flex flex-col relative bg-slate-900">
+        <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 pointer-events-none z-0"></div>
+        
+        <main class="flex-1 overflow-y-auto p-4 sm:p-8 relative z-10 max-w-7xl mx-auto w-full">
+            <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 border-b border-slate-800 pb-6">
+                <div>
+                    <h1 id="propTitle" class="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">Hotel Dashboard</h1>
+                    <p class="text-slate-400 text-sm font-semibold mt-1">Manage Direct OHS Bookings</p>
+                </div>
+                <button onclick="fetchData(this)" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-3 rounded-xl text-sm font-bold text-white shadow-lg transition">Sync Bookings</button>
+            </header>
+
+            <div class="glass-panel p-6 rounded-2xl overflow-hidden">
+                <h3 class="text-lg font-black text-white mb-4 border-b border-slate-800/50 pb-3 flex justify-between">
+                    <span>Recent Reservations</span>
+                    <span class="text-xs bg-slate-800 text-slate-400 px-3 py-1 rounded-full">Assign room to send auto-WhatsApp</span>
+                </h3>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm min-w-max">
+                        <thead>
+                            <tr class="text-slate-400 uppercase tracking-widest text-[10px] border-b border-slate-800/50">
+                                <th class="py-3 px-3">Guest Details</th>
+                                <th class="py-3 px-3">Dates & Amount</th>
+                                <th class="py-3 px-3 text-center">Payment Proof</th>
+                                <th class="py-3 px-3 text-center">Room Allocation & Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bookingsTable" class="divide-y divide-slate-800/50 text-slate-300"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- IMAGE VIEWER MODAL -->
+    <div id="imagePanel" class="hidden-view fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-slate-900 p-4 rounded-2xl max-w-md w-full border border-slate-700 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
+                <span class="text-sm font-black uppercase tracking-widest text-white">Payment Verification</span>
+                <button onclick="document.getElementById('imagePanel').classList.add('hidden-view')" class="text-slate-400 hover:text-white font-bold text-xl transition">×</button>
+            </div>
+            <img id="viewerImg" src="" class="max-h-[60vh] w-full object-contain bg-slate-800 rounded-lg">
+        </div>
+    </div>
+
+    <script>
+        const OHS_API_URL = "https://script.google.com/macros/s/AKfycbxuNSpykrLYlu0TaDw9rYEQp5xcCXEaRtFelTsP6n0K9KcfjbT3xS1Ua5u-S3TQzoJ4xw/exec"; 
+        let adminData = null;
+
+        function notify(msg) {
+            const el = document.getElementById('toast');
+            el.innerText = msg;
+            el.classList.remove('hidden-view');
+            setTimeout(() => el.classList.add('hidden-view'), 3500);
+        }
+
+        function login() {
+            const hid = document.getElementById('hotelIdInput').value.trim();
+            const pin = document.getElementById('pinInput').value.trim();
+            if(!hid || !pin) return notify("Enter ID and PIN.");
+
+            const btn = document.getElementById('btnLogin');
+            btn.innerText = "Verifying..."; btn.classList.add('btn-loading');
+
+            fetch(`${OHS_API_URL}?action=getHotelAdminData&hotelId=${hid}&pin=${pin}`)
+                .then(r=>r.json()).then(res => {
+                    btn.innerText = "Login to Dashboard"; btn.classList.remove('btn-loading');
+                    if(res.success) {
+                        adminData = res;
+                        document.getElementById('propTitle').innerText = `${res.hotelDetails.HotelName} Portal`;
+                        document.getElementById('authBox').classList.add('hidden-view');
+                        document.getElementById('mainWrapper').classList.remove('hidden-view');
+                        renderUI();
+                    } else notify(res.error);
+                }).catch(()=> { btn.innerText = "Login to Dashboard"; btn.classList.remove('btn-loading'); notify("Network error."); });
+        }
+
+        function fetchData(btn) {
+            const hid = document.getElementById('hotelIdInput').value.trim();
+            const pin = document.getElementById('pinInput').value.trim();
+            if(btn) { btn.innerText = "Syncing..."; btn.classList.add('btn-loading'); }
+            
+            fetch(`${OHS_API_URL}?action=getHotelAdminData&hotelId=${hid}&pin=${pin}`)
+                .then(r=>r.json()).then(res => {
+                    if(btn) { btn.innerText = "Sync Bookings"; btn.classList.remove('btn-loading'); }
+                    if(res.success) { adminData = res; renderUI(); notify("Bookings synced."); }
+                });
+        }
+
+        function viewDoc(url) {
+            if(!url) return notify("Screenshot not attached by guest.");
+            document.getElementById('viewerImg').src = url;
+            document.getElementById('imagePanel').classList.remove('hidden-view');
+        }
+
+        function renderUI() {
+            const tbody = document.getElementById('bookingsTable');
+            tbody.innerHTML = "";
+            
+            if(adminData.bookings.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center py-10 text-slate-500 font-bold">No bookings found for your property.</td></tr>`;
+                return;
+            }
+
+            adminData.bookings.forEach(b => {
+                const isPending = b.Status === "Pending Verification";
+                const bgRow = isPending ? "bg-indigo-500/10 border-l-4 border-indigo-500" : "hover:bg-slate-800/40";
+                
+                let actionArea = "";
+                if(isPending) {
+                    actionArea = `
+                        <div class="flex flex-col gap-2 w-full max-w-[200px] mx-auto">
+                            <input type="text" id="roomAssign_${b.BookingId}" placeholder="Enter Room No" class="bg-slate-800 border border-indigo-500/50 p-2 rounded text-xs text-center text-white font-bold outline-none focus:border-indigo-400">
+                            <button onclick="confirmAndNotify('${b.BookingId}', '${b.GuestName}', '${b.Phone}', '${b.Dates}')" class="bg-green-600 hover:bg-green-500 text-white font-black uppercase text-[10px] tracking-widest py-2 rounded shadow-lg transition">Confirm & WhatsApp</button>
+                        </div>
+                    `;
+                } else {
+                    actionArea = `<span class="bg-slate-800 text-green-400 px-3 py-1.5 rounded-lg text-xs font-black tracking-widest border border-green-500/20 shadow-sm uppercase">Confirmed : Rm ${b.AssignedRoom}</span>`;
+                }
+
+                tbody.innerHTML += `
+                <tr class="${bgRow} transition border-b border-slate-800/50">
+                    <td class="py-4 px-3">
+                        <span class="text-white font-black text-base block">${b.GuestName}</span>
+                        <span class="text-[11px] font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded mt-1 inline-block border border-slate-700">${b.Phone}</span>
+                    </td>
+                    <td class="py-4 px-3">
+                        <span class="text-sm font-bold text-slate-300 block mb-1">${b.Dates}</span>
+                        <span class="text-indigo-400 font-black font-mono bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">₹${b.TotalAmount}</span>
+                    </td>
+                    <td class="py-4 px-3 text-center">
+                        <button onclick="viewDoc('${b.PaymentScreenshot}')" class="bg-slate-800 border border-slate-700 text-slate-300 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-wider hover:bg-slate-700 transition flex items-center justify-center gap-1 mx-auto">
+                            <svg class="w-3 h-3 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg> View Proof
+                        </button>
+                    </td>
+                    <td class="py-4 px-3 text-center align-middle">${actionArea}</td>
+                </tr>`;
+            });
+        }
+
+        function confirmAndNotify(bId, gName, gPhone, dates) {
+            const roomNo = document.getElementById(`roomAssign_${bId}`).value.trim();
+            if(!roomNo) return notify("Please enter a Room Number first.");
+
+            fetch(OHS_API_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "confirmBooking", bookingId: bId, roomNo: roomNo })
+            }).then(r=>r.json()).then(res => {
+                if(res.success) {
+                    notify("Confirmed! Opening WhatsApp...");
+                    fetchData(null);
+                    
+                    // AUTO WHATSAPP REDIRECTION LOGIC (100% Free via wa.me API)
+                    const hotelName = adminData.hotelDetails.HotelName;
+                    const cleanPhone = gPhone.replace(/[^0-9]/g, ''); // Ensure only numbers
+                    const finalPhone = cleanPhone.length === 10 ? '91'+cleanPhone : cleanPhone;
+                    
+                    const msg = `*Booking Confirmed!* ✅\n\nDear *${gName}*,\nYour stay at *${hotelName}* is confirmed.\n\n*Dates:* ${dates}\n*Assigned Room No:* ${roomNo}\n\nWe look forward to hosting you! Have a safe journey.`;
+                    
+                    setTimeout(() => {
+                        window.open(`https://wa.me/${finalPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+                    }, 1000);
+
+                } else notify("Error updating booking.");
+            });
+        }
+    </script>
+</body>
+</html>
