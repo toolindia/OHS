@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OHS - Book Hotels Online</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f8fafc; color: #0f172a; font-family: 'Inter', sans-serif; }
+        .hidden-view { display: none !important; }
+        .hero-pattern { background-color: #dc2626; background-image: radial-gradient(#ef4444 1px, transparent 1px); background-size: 20px 20px; }
+        .btn-loading { opacity: 0.6; cursor: not-allowed; pointer-events: none; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+
+    <div id="toast" class="hidden-view fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-6 py-3 rounded-full text-sm font-bold shadow-2xl transition-all duration-300"></div>
+
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-red-600 text-white w-10 h-10 flex items-center justify-center rounded-xl font-black text-xl shadow-md">O</div>
+                <div>
+                    <h1 class="text-2xl font-black text-red-600 tracking-tighter leading-none">OHS</h1>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Ofbuzz Hospitality Services</p>
+                </div>
+            </div>
+            <div class="text-xs font-bold bg-green-100 text-green-700 px-3 py-1.5 rounded-full flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Network Active
+            </div>
+        </div>
+    </header>
+
+    <div id="loader" class="fixed inset-0 bg-white flex flex-col items-center justify-center z-50">
+        <div class="w-12 h-12 border-4 border-red-100 border-t-red-600 rounded-full animate-spin mb-4"></div>
+        <p class="font-black text-slate-800 uppercase tracking-widest text-sm">Loading Destinations...</p>
+    </div>
+
+    <!-- SEARCH HERO -->
+    <div id="stepSearch" class="hidden-view">
+        <div class="hero-pattern py-16 px-4 text-center">
+            <h2 class="text-3xl sm:text-5xl font-black text-white mb-4 drop-shadow-md">Find Your Perfect Stay</h2>
+            <p class="text-red-100 mb-8 max-w-xl mx-auto font-medium">Direct bookings. Zero commissions. Powered by Ofbuzz network.</p>
+            
+            <div class="bg-white p-3 sm:p-4 rounded-2xl shadow-2xl max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <div class="text-left bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">City / Location</label>
+                    <input type="text" id="searchCity" placeholder="e.g. Delhi, Mumbai" class="w-full bg-transparent font-bold text-slate-800 outline-none">
+                </div>
+                <div class="text-left bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Check-In</label>
+                    <input type="date" id="bIn" class="w-full bg-transparent font-bold text-slate-800 outline-none cursor-pointer">
+                </div>
+                <div class="text-left bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Check-Out</label>
+                    <input type="date" id="bOut" class="w-full bg-transparent font-bold text-slate-800 outline-none cursor-pointer">
+                </div>
+                <button onclick="searchHotels()" class="bg-red-600 hover:bg-red-700 text-white font-black uppercase tracking-wider rounded-xl shadow-md transition transform hover:scale-[1.02]">Search</button>
+            </div>
+        </div>
+
+        <main class="max-w-7xl mx-auto px-4 py-12">
+            <div class="flex justify-between items-end mb-6">
+                <h3 class="font-black text-2xl text-slate-800">Available Properties <span id="cityLabel" class="text-red-600"></span></h3>
+                <span id="hotelCount" class="text-sm font-bold text-slate-500 bg-slate-200 px-3 py-1 rounded-full">0 Found</span>
+            </div>
+            <div id="hotelGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+        </main>
+    </div>
+
+    <!-- BOOKING PAYMENT FLOW -->
+    <div id="stepPay" class="hidden-view flex-1 max-w-5xl mx-auto w-full p-4 sm:p-6 mt-4">
+        <button onclick="goBack()" class="flex items-center gap-2 text-slate-500 hover:text-slate-800 font-bold mb-6 transition">← Back to Search</button>
+        
+        <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+            <h3 class="font-black text-2xl border-b border-slate-100 pb-4 mb-6 text-slate-800">Confirm Your Booking</h3>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                <div class="space-y-5">
+                    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                        <div class="flex justify-between items-start mb-4 border-b border-slate-200 pb-4">
+                            <div>
+                                <span class="bg-red-100 text-red-600 text-[10px] font-black uppercase px-2 py-1 rounded tracking-wider">Hotel Details</span>
+                                <h4 id="summHotelName" class="font-black text-xl text-slate-800 mt-1"></h4>
+                                <p id="summCity" class="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1"></p>
+                            </div>
+                        </div>
+                        <div class="space-y-2 font-mono text-sm">
+                            <div class="flex justify-between"><span class="text-slate-500">Dates:</span><span id="summDates" class="font-bold text-slate-800"></span></div>
+                            <div class="flex justify-between border-t border-slate-200 pt-3 mt-3 text-lg">
+                                <span class="font-sans font-black text-slate-800 uppercase">Total Payable:</span>
+                                <span id="summTotal" class="font-sans font-black text-red-600"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div><label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Guest Full Name</label><input type="text" id="gName" placeholder="Enter Full Name" class="w-full border border-slate-300 p-4 rounded-xl outline-none focus:border-red-500 transition font-semibold"></div>
+                        <div><label class="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Mobile Number (WhatsApp)</label><input type="tel" id="gPhone" placeholder="Enter Mobile Number" class="w-full border border-slate-300 p-4 rounded-xl outline-none focus:border-red-500 transition font-mono"></div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl p-6 bg-slate-50">
+                    <h4 class="text-sm font-black uppercase text-slate-500 mb-2 tracking-widest">Pay Directly to Hotel</h4>
+                    <p class="text-[10px] font-bold text-red-500 mb-4 uppercase tracking-wider bg-red-50 px-3 py-1 rounded border border-red-100 text-center">Your payment goes directly to <br><span id="summHotelNamePay"></span></p>
+                    
+                    <img id="qrCode" src="" class="w-48 h-48 object-contain rounded-xl bg-white border-4 border-white shadow-sm mb-4">
+                    
+                    <div class="w-full mb-6">
+                        <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Attach Payment Screenshot *</label>
+                        <input type="file" id="payScreenshot" accept="image/*" class="w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:uppercase file:tracking-wider file:bg-slate-200 file:text-slate-700 hover:file:bg-slate-300 transition cursor-pointer">
+                    </div>
+
+                    <button id="btnConfirm" onclick="confirmBooking()" class="w-full bg-green-600 text-white font-black tracking-widest uppercase py-4 rounded-xl shadow-lg hover:bg-green-700 transition transform hover:-translate-y-1">Verify & Book Now</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SUCCESS SCREEN -->
+    <div id="stepSuccess" class="hidden-view flex-1 flex items-center justify-center p-4">
+        <div class="text-center p-12 bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-lg w-full">
+            <div class="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-5xl shadow-inner border-4 border-white">✓</div>
+            <h2 class="text-3xl font-black mb-3 text-slate-800">Booking Requested!</h2>
+            <p class="text-slate-500 mb-8 font-medium leading-relaxed">Your details and payment screenshot have been sent to the hotel admin. You will receive a WhatsApp message with your room number shortly.</p>
+            <button onclick="location.reload()" class="bg-slate-900 text-white font-bold py-3 px-8 rounded-xl hover:bg-slate-800 transition shadow-lg">Return to Home</button>
+        </div>
+    </div>
+
+    <script>
+        const OHS_API_URL = "https://script.google.com/macros/s/AKfycbxuNSpykrLYlu0TaDw9rYEQp5xcCXEaRtFelTsP6n0K9KcfjbT3xS1Ua5u-S3TQzoJ4xw/exec"; 
+        let allHotels = [], selectedHotel = null, base64Screenshot = "";
+
+        function notify(msg) {
+            const el = document.getElementById('toast');
+            el.innerText = msg;
+            el.classList.remove('hidden-view');
+            setTimeout(() => el.classList.add('hidden-view'), 3500);
+        }
+
+        async function init() {
+            fetch(`${OHS_API_URL}?action=getPlatformData`)
+            .then(r=>r.json()).then(res => {
+                if(res.success) {
+                    allHotels = res.hotels || [];
+                    const today = new Date(); const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+                    document.getElementById('bIn').value = today.toISOString().split('T')[0];
+                    document.getElementById('bOut').value = tomorrow.toISOString().split('T')[0];
+
+                    document.getElementById('loader').classList.add('hidden-view');
+                    document.getElementById('stepSearch').classList.remove('hidden-view');
+                    renderHotels(allHotels);
+                } else { document.getElementById('loader').innerHTML = `<p class="font-bold text-red-600">Error: ${res.error}</p>`; }
+            });
+        }
+
+        function renderHotels(hotelsList) {
+            const grid = document.getElementById('hotelGrid');
+            document.getElementById('hotelCount').innerText = `${hotelsList.length} Hotels Found`;
+            grid.innerHTML = "";
+            
+            hotelsList.forEach(h => {
+                const features = (h.Features || "").split(',').map(f => `<span class="bg-slate-100 text-slate-600 px-2 py-1 rounded-md text-[10px] font-bold border border-slate-200">${f.trim()}</span>`).join('');
+                grid.innerHTML += `
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-xl transition transform hover:-translate-y-1 flex flex-col">
+                        <div class="relative">
+                            <span class="absolute top-3 right-3 bg-white text-slate-800 text-xs font-black px-2 py-1 rounded-lg shadow flex items-center gap-1">⭐ ${h.Rating}</span>
+                            <img src="${h.ImageUrl || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80'}" class="w-full h-48 object-cover">
+                        </div>
+                        <div class="p-5 flex-1 flex flex-col">
+                            <h4 class="font-black text-xl text-slate-800 leading-tight mb-1">${h.HotelName}</h4>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-1">📍 ${h.City}</p>
+                            <div class="flex flex-wrap gap-1 mb-6">${features}</div>
+                            <div class="mt-auto flex justify-between items-end border-t border-slate-100 pt-4">
+                                <div><p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Per night</p><span class="font-mono text-red-600 font-black text-2xl">₹${h.BasePrice}</span></div>
+                                <button onclick='startBooking(${JSON.stringify(h)})' class="bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-6 rounded-xl transition shadow-md">Book</button>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function searchHotels() {
+            const city = document.getElementById('searchCity').value.toLowerCase().trim();
+            document.getElementById('cityLabel').innerText = city ? `in ${city.charAt(0).toUpperCase() + city.slice(1)}` : "";
+            renderHotels(city ? allHotels.filter(h => h.City.toLowerCase().includes(city)) : allHotels);
+        }
+
+        function startBooking(hObj) {
+            selectedHotel = hObj;
+            document.getElementById('summHotelName').innerText = hObj.HotelName;
+            document.getElementById('summHotelNamePay').innerText = hObj.HotelName;
+            document.getElementById('summCity').innerText = hObj.City;
+            document.getElementById('summDates').innerText = `${document.getElementById('bIn').value} to ${document.getElementById('bOut').value}`;
+            document.getElementById('summTotal').innerText = `₹${hObj.BasePrice}`;
+            
+            // HOTEL KA DIRECT UPI
+            const upiStr = `upi://pay?pa=${hObj.HotelUpi}&pn=${encodeURIComponent(hObj.HotelName)}&am=${hObj.BasePrice}&cu=INR`;
+            document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiStr)}`;
+            
+            document.getElementById('stepSearch').classList.add('hidden-view');
+            document.getElementById('stepPay').classList.remove('hidden-view');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function goBack() { document.getElementById('stepPay').classList.add('hidden-view'); document.getElementById('stepSearch').classList.remove('hidden-view'); }
+
+        // IMAGE COMPRESSION AND CONVERSION
+        document.getElementById('payScreenshot').addEventListener('change', function(e) {
+            const f = e.target.files[0]; if (!f) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width, h = img.height;
+                    if (w > 800) { h = Math.round((h * 800) / w); w = 800; }
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    base64Screenshot = canvas.toDataURL('image/jpeg', 0.6); // Compress Image
+                };
+                img.src = evt.target.result;
+            };
+            reader.readAsDataURL(f);
+        });
+
+        function confirmBooking() {
+            const name = document.getElementById('gName').value.trim();
+            const phone = document.getElementById('gPhone').value.trim();
+            if(!name || !phone) return notify("Please enter your name and mobile number.");
+            if(!base64Screenshot) return notify("Please upload the payment screenshot.");
+
+            const btn = document.getElementById('btnConfirm');
+            btn.innerText = "Securing Booking..."; btn.classList.add('btn-loading');
+
+            fetch(OHS_API_URL, {
+                method: "POST",
+                body: JSON.stringify({ 
+                    action: "bookHotel", hotelId: selectedHotel.HotelId, hotelName: selectedHotel.HotelName,
+                    guestName: name, phone: phone, dates: document.getElementById('summDates').innerText,
+                    amount: selectedHotel.BasePrice, screenshot: base64Screenshot
+                })
+            }).then(r=>r.json()).then(res => {
+                document.getElementById('stepPay').classList.add('hidden-view');
+                document.getElementById('stepSuccess').classList.remove('hidden-view');
+            }).catch(()=> { btn.innerText = "Payment Done, Book Now"; btn.classList.remove('btn-loading'); notify("Network Error."); });
+        }
+        
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
