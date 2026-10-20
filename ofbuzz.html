@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ofbuzz Master HQ - Super Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #020617; color: #f8fafc; font-family: 'Inter', sans-serif; }
+        .hidden-view { display: none !important; }
+        .glass-panel { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
+        .btn-loading { opacity: 0.6; cursor: not-allowed; pointer-events: none; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #dc2626; border-radius: 8px; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+    <div id="toast" class="hidden-view fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-600 text-white px-6 py-3 rounded-full text-sm font-bold shadow-2xl transition-all duration-300"></div>
+
+    <!-- MASTER LOGIN -->
+    <div id="authBox" class="fixed inset-0 bg-slate-950 flex items-center justify-center z-50">
+        <div class="glass-panel p-10 rounded-3xl w-full max-w-sm m-4 text-center border-t-4 border-red-600 shadow-[0_0_50px_rgba(220,38,38,0.1)]">
+            <div class="w-16 h-16 bg-red-600 rounded-2xl flex items-center justify-center text-2xl font-black text-white mx-auto mb-4 shadow-lg">O</div>
+            <h2 class="text-3xl font-black text-white mb-1 tracking-tight">HQ Control</h2>
+            <p class="text-xs text-red-500 mb-8 uppercase tracking-widest font-bold">Ofbuzz Super Admin Only</p>
+            <input type="password" id="pinInput" placeholder="Master PIN" class="w-full text-center text-4xl font-mono p-4 bg-slate-900 border border-slate-800 text-white rounded-xl mb-6 outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition shadow-inner">
+            <button id="btnLogin" onclick="login()" class="w-full bg-red-600 text-white font-black uppercase tracking-widest py-4 rounded-xl hover:bg-red-700 transition shadow-[0_0_20px_rgba(220,38,38,0.4)]">Access Network</button>
+        </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="hidden-view w-64 glass-panel border-r border-slate-800 flex flex-col z-10">
+        <div class="p-6 font-black text-2xl tracking-tighter border-b border-slate-800/80 text-white flex items-center gap-3">
+            <div class="w-8 h-8 bg-red-600 rounded flex items-center justify-center text-sm shadow-lg">O</div>
+            OFBUZZ<span class="text-red-500 text-lg">HQ</span>
+        </div>
+        <nav class="flex-1 p-4 space-y-2 text-sm font-bold text-slate-400 overflow-y-auto custom-scrollbar">
+            <button onclick="switchTab('dashboard')" class="w-full flex items-center gap-3 text-left p-3.5 rounded-xl hover:bg-slate-800 hover:text-white transition group"><svg class="w-5 h-5 text-slate-500 group-hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg> Platform Overview</button>
+            <button onclick="switchTab('hotels')" class="w-full flex items-center gap-3 text-left p-3.5 rounded-xl hover:bg-slate-800 hover:text-white transition group"><svg class="w-5 h-5 text-slate-500 group-hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg> Manage Partner Hotels</button>
+            <button onclick="switchTab('bookings')" class="w-full flex items-center gap-3 text-left p-3.5 rounded-xl hover:bg-slate-800 hover:text-white transition group"><svg class="w-5 h-5 text-slate-500 group-hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg> Global Bookings</button>
+        </nav>
+        <div class="p-4 border-t border-slate-800">
+            <button onclick="location.reload()" class="w-full bg-slate-800 hover:bg-slate-700 text-white p-3 rounded-lg text-xs font-bold uppercase tracking-widest transition">Lock Terminal</button>
+        </div>
+    </aside>
+
+    <!-- MAIN DASHBOARD -->
+    <div id="mainWrapper" class="hidden-view flex-1 flex flex-col relative bg-slate-950">
+        <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none z-0"></div>
+        
+        <main class="flex-1 overflow-y-auto p-8 relative z-10 custom-scrollbar">
+            <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4 border-b border-slate-800/80 pb-6">
+                <div>
+                    <h1 class="text-3xl font-black text-white uppercase tracking-tight">Master Network Dashboard</h1>
+                    <p class="text-red-400 text-sm font-bold tracking-widest mt-1 uppercase">Global Aggregator Control</p>
+                </div>
+                <button onclick="fetchData(this)" class="bg-red-600 hover:bg-red-700 px-6 py-3 rounded-xl text-sm font-black uppercase tracking-wider text-white shadow-[0_0_15px_rgba(220,38,38,0.4)] transition">Refresh Network</button>
+            </header>
+
+            <!-- TAB: DASHBOARD -->
+            <div id="tab-dashboard" class="space-y-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="glass-panel p-8 rounded-3xl relative overflow-hidden group border-t-4 border-blue-500">
+                        <p class="text-xs uppercase font-black text-slate-400 tracking-widest mb-2">Total Partner Hotels</p>
+                        <p id="mHotels" class="text-5xl font-black text-white">0</p>
+                        <p class="text-[10px] text-blue-400 font-bold mt-4 uppercase tracking-widest">Active across network</p>
+                    </div>
+
+                    <div class="glass-panel p-8 rounded-3xl relative overflow-hidden group border-t-4 border-orange-500">
+                        <p class="text-xs uppercase font-black text-slate-400 tracking-widest mb-2">Global Bookings Generated</p>
+                        <p id="mBookings" class="text-5xl font-black text-orange-400">0</p>
+                        <p class="text-[10px] text-slate-500 font-bold mt-4 uppercase tracking-widest">Total network traffic</p>
+                    </div>
+
+                    <div class="glass-panel p-8 rounded-3xl relative overflow-hidden group border-t-4 border-green-500">
+                        <p class="text-xs uppercase font-black text-slate-400 tracking-widest mb-2">Total Network GMV</p>
+                        <p id="mGmv" class="text-5xl font-black text-green-400">₹0</p>
+                        <p class="text-[10px] text-green-500 font-bold mt-4 uppercase tracking-widest">Gross Merchandise Value</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: MANAGE HOTELS -->
+            <div id="tab-hotels" class="hidden-view space-y-8">
+                <!-- Add New Hotel Form -->
+                <div class="glass-panel p-8 rounded-3xl border border-slate-700/50">
+                    <h3 class="text-xl font-black text-white mb-6 border-b border-slate-800 pb-3">Onboard New Hotel Partner</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Hotel Name</label><input type="text" id="hName" class="w-full bg-slate-800/50 border border-slate-700 p-3 rounded-xl text-white outline-none focus:border-red-500 font-bold"></div>
+                        <div><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">City</label><input type="text" id="hCity" class="w-full bg-slate-800/50 border border-slate-700 p-3 rounded-xl text-white outline-none focus:border-red-500 font-bold"></div>
+                        <div><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Base Price / Night (₹)</label><input type="number" id="hPrice" class="w-full bg-slate-800/50 border border-slate-700 p-3 rounded-xl text-white outline-none focus:border-red-500 font-mono"></div>
+                        
+                        <div><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Hotel Login PIN (4 Digits)</label><input type="number" id="hPin" placeholder="e.g. 1234" class="w-full bg-slate-800/50 border border-slate-700 p-3 rounded-xl text-white outline-none focus:border-red-500 font-mono"></div>
+                        <div><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Direct Hotel UPI ID</label><input type="text" id="hUpi" placeholder="hotel@upi" class="w-full bg-slate-800/50 border border-slate-700 p-3 rounded-xl text-white outline-none focus:border-red-500 font-mono"></div>
+                        <div><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Image URL</label><input type="url" id="hImg" placeholder="https://..." class="w-full bg-slate-800/50 border border-slate-700 p-3 rounded-xl text-white outline-none focus:border-red-500 font-mono"></div>
+                        
+                        <div class="md:col-span-2"><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Features (Comma separated)</label><input type="text" id="hFeat" placeholder="AC, WiFi, Pool" class="w-full bg-slate-800/50 border border-slate-700 p-3 rounded-xl text-white outline-none focus:border-red-500 font-bold"></div>
+                        <div class="flex flex-col justify-end"><button id="btnOnboard" onclick="onboardHotel(this)" class="w-full bg-red-600 hover:bg-red-500 text-white font-black uppercase tracking-widest py-3 rounded-xl shadow-lg transition">Add Hotel</button></div>
+                    </div>
+                </div>
+
+                <!-- Hotel List -->
+                <div class="glass-panel p-8 rounded-3xl overflow-x-auto border border-slate-700/50">
+                    <h3 class="text-lg font-black text-white mb-6 border-b border-slate-800 pb-3">Platform Partner Network</h3>
+                    <table class="w-full text-left text-sm min-w-max">
+                        <thead><tr class="text-slate-500 uppercase tracking-widest text-[10px] border-b border-slate-800"><th class="py-3 px-3">Hotel ID & Name</th><th class="px-3">City & Price</th><th class="px-3">Payment UPI</th><th class="px-3">Status</th><th class="text-right px-3">Action</th></tr></thead>
+                        <tbody id="hotelsTable" class="divide-y divide-slate-800/50 text-slate-300 font-medium"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB: GLOBAL BOOKINGS -->
+            <div id="tab-bookings" class="hidden-view space-y-6">
+                <div class="glass-panel p-8 rounded-3xl overflow-x-auto border border-slate-700/50">
+                    <h3 class="text-lg font-black text-white mb-6 border-b border-slate-800 pb-3">Global Network Bookings</h3>
+                    <table class="w-full text-left text-sm min-w-max">
+                        <thead><tr class="text-slate-500 uppercase tracking-widest text-[10px] border-b border-slate-800"><th class="py-3 px-3">Booking ID & Date</th><th class="px-3">Hotel Details</th><th class="px-3">Guest Info</th><th class="px-3">Amount</th><th class="px-3">Status</th></tr></thead>
+                        <tbody id="globalBookingsTable" class="divide-y divide-slate-800/50 text-slate-300 font-medium"></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // ==========================================
+        // OHS SUPER ADMIN API CONFIGURATION
+        // ==========================================
+        const OHS_API_URL = "https://script.google.com/macros/s/AKfycbxuNSpykrLYlu0TaDw9rYEQp5xcCXEaRtFelTsP6n0K9KcfjbT3xS1Ua5u-S3TQzoJ4xw/exec"; 
+        let superAdminData = null;
+
+        function notify(msg) {
+            const el = document.getElementById('toast');
+            el.innerText = msg;
+            el.classList.remove('hidden-view');
+            setTimeout(() => el.classList.add('hidden-view'), 3500);
+        }
+
+        function switchTab(tabId) {
+            ['dashboard', 'hotels', 'bookings'].forEach(t => document.getElementById(`tab-${t}`).classList.add('hidden-view'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden-view');
+        }
+
+        function apiCall(payload, btnElem, loadingText, callback) {
+            const originalText = btnElem ? btnElem.innerText : "";
+            if(btnElem) { btnElem.innerText = loadingText; btnElem.classList.add('btn-loading'); }
+            
+            fetch(OHS_API_URL, { method: "POST", body: JSON.stringify(payload) })
+            .then(r=>r.json()).then(res => {
+                if(btnElem) { btnElem.innerText = originalText; btnElem.classList.remove('btn-loading'); }
+                if(callback) callback(res);
+            }).catch(err => {
+                if(btnElem) { btnElem.innerText = originalText; btnElem.classList.remove('btn-loading'); }
+                notify("Network Error.");
+            });
+        }
+
+        function login() {
+            const pin = document.getElementById('pinInput').value;
+            const btn = document.getElementById('btnLogin');
+            btn.innerText = "Verifying Credentials..."; btn.classList.add('btn-loading');
+
+            fetch(`${OHS_API_URL}?action=getSuperAdminData&pin=${pin}`)
+                .then(r=>r.json()).then(res => {
+                    btn.innerText = "Access Network"; btn.classList.remove('btn-loading');
+                    if(res.success) {
+                        superAdminData = res;
+                        document.getElementById('authBox').classList.add('hidden-view');
+                        document.getElementById('sidebar').classList.remove('hidden-view');
+                        document.getElementById('mainWrapper').classList.remove('hidden-view');
+                        renderUI();
+                    } else notify(res.error);
+                }).catch(()=> { btn.innerText = "Access Network"; btn.classList.remove('btn-loading'); notify("Connection timeout"); });
+        }
+
+        function fetchData(btn) {
+            const pin = document.getElementById('pinInput').value;
+            if(btn) { btn.innerText = "Syncing..."; btn.classList.add('btn-loading'); }
+            fetch(`${OHS_API_URL}?action=getSuperAdminData&pin=${pin}`)
+                .then(r=>r.json()).then(res => {
+                    if(btn) { btn.innerText = "Refresh Network"; btn.classList.remove('btn-loading'); }
+                    if(res.success) { superAdminData = res; renderUI(); notify("Network data synced."); }
+                });
+        }
+
+        function renderUI() {
+            // Dashboard Metrics
+            document.getElementById('mHotels').innerText = superAdminData.summary.totalHotels;
+            document.getElementById('mBookings').innerText = superAdminData.summary.totalBookings;
+            document.getElementById('mGmv').innerText = `₹${superAdminData.summary.totalGmv.toLocaleString()}`;
+
+            // Hotels Table
+            const hTbody = document.getElementById('hotelsTable');
+            hTbody.innerHTML = "";
+            superAdminData.hotels.forEach(h => {
+                const statusColor = h.Status === "Active" ? "text-green-400 bg-green-500/10 border-green-500/20" : "text-red-400 bg-red-500/10 border-red-500/20";
+                hTbody.innerHTML += `<tr class="hover:bg-slate-800/40 transition border-b border-slate-800/50">
+                    <td class="py-4 px-3"><span class="font-black text-white block text-base">${h.HotelName}</span><span class="text-[10px] font-mono text-indigo-400 uppercase tracking-widest">${h.HotelId} (PIN: ${h.HotelPin})</span></td>
+                    <td class="py-4 px-3"><span class="block font-bold text-slate-300 uppercase text-xs">${h.City}</span><span class="text-orange-400 font-mono font-bold text-sm">₹${h.BasePrice}</span></td>
+                    <td class="py-4 px-3 font-mono text-xs text-slate-400">${h.HotelUpi}</td>
+                    <td class="py-4 px-3"><span class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border ${statusColor}">${h.Status}</span></td>
+                    <td class="py-4 px-3 text-right"><button onclick="toggleStatus('${h.HotelId}', this)" class="text-slate-400 hover:text-white text-[10px] font-black uppercase tracking-widest bg-slate-800 px-4 py-2 rounded-lg transition border border-slate-700 shadow-sm">Toggle Status</button></td>
+                </tr>`;
+            });
+
+            // Global Bookings Table
+            const bTbody = document.getElementById('globalBookingsTable');
+            bTbody.innerHTML = "";
+            if(superAdminData.bookings.length === 0) bTbody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-slate-500 font-bold">No global bookings yet.</td></tr>`;
+            superAdminData.bookings.forEach(b => {
+                const sColor = b.Status === "Confirmed" ? "text-green-400" : "text-orange-400";
+                bTbody.innerHTML += `<tr class="hover:bg-slate-800/40 transition border-b border-slate-800/50">
+                    <td class="py-4 px-3"><span class="font-mono text-indigo-400 font-bold block">${b.BookingId}</span><span class="text-[10px] text-slate-500 font-mono">${b.Timestamp}</span></td>
+                    <td class="py-4 px-3"><span class="text-white font-bold block">${b.HotelName}</span><span class="text-[10px] text-slate-400 uppercase tracking-widest">${b.HotelId}</span></td>
+                    <td class="py-4 px-3"><span class="text-white font-bold block">${b.GuestName}</span><span class="text-xs font-mono text-slate-400">${b.Phone}</span></td>
+                    <td class="py-4 px-3"><span class="text-green-400 font-black font-mono text-sm">₹${b.TotalAmount}</span></td>
+                    <td class="py-4 px-3"><span class="text-xs font-black uppercase tracking-widest ${sColor}">${b.Status}</span></td>
+                </tr>`;
+            });
+        }
+
+        function onboardHotel(btn) {
+            const payload = { 
+                action: "addNewHotel", 
+                hotelName: document.getElementById('hName').value.trim(),
+                city: document.getElementById('hCity').value.trim(),
+                basePrice: document.getElementById('hPrice').value.trim(),
+                hotelPin: document.getElementById('hPin').value.trim(),
+                upi: document.getElementById('hUpi').value.trim(),
+                imageUrl: document.getElementById('hImg').value.trim(),
+                features: document.getElementById('hFeat').value.trim(),
+                rating: "5.0", isPms: "No"
+            };
+
+            if(!payload.hotelName || !payload.city || !payload.basePrice || !payload.hotelPin || !payload.upi) return notify("Fill all required fields.");
+            apiCall(payload, btn, "Onboarding...", res => { 
+                if(res.success) {
+                    ['hName', 'hCity', 'hPrice', 'hPin', 'hUpi', 'hImg', 'hFeat'].forEach(id => document.getElementById(id).value = "");
+                    fetchData(null); 
+                    notify(res.message);
+                }
+            });
+        }
+
+        function toggleStatus(id, btn) { apiCall({ action: "toggleHotelStatus", hotelId: id }, btn, "Wait...", res => { fetchData(null); }); }
+
+    </script>
+</body>
+</html>
